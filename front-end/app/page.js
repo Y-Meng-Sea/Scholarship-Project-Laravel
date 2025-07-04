@@ -2,13 +2,19 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { BookOpen, Users, Award, TrendingUp, LogOut } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { BookOpen, LogOut, Plus, Search, Filter } from "lucide-react";
+import ScholarshipFeed from "@/components/scholarship-feed";
+import CreateScholarshipModal from "@/components/create-scholarship-modal";
+import SearchFilters from "@/components/search-filters";
 
 export default function HomePage() {
      const [user, setUser] = useState(null);
      const [loading, setLoading] = useState(true);
+     const [showCreateModal, setShowCreateModal] = useState(false);
+     const [showFilters, setShowFilters] = useState(false);
+     const [searchQuery, setSearchQuery] = useState("");
      const router = useRouter();
 
      useEffect(() => {
@@ -16,7 +22,7 @@ export default function HomePage() {
           const userData = localStorage.getItem("user_data");
 
           if (!token || !userData) {
-               router.push("/auth/login");
+               router.push("/login");
                return;
           }
 
@@ -24,7 +30,7 @@ export default function HomePage() {
                setUser(JSON.parse(userData));
           } catch (error) {
                console.error("Error parsing user data:", error);
-               router.push("/auth/login");
+               router.push("/login");
           } finally {
                setLoading(false);
           }
@@ -33,7 +39,15 @@ export default function HomePage() {
      const handleLogout = () => {
           localStorage.removeItem("auth_token");
           localStorage.removeItem("user_data");
-          router.push("/auth/login");
+          router.push("/login");
+     };
+
+     const getInitials = (name) => {
+          return name
+               .split(" ")
+               .map((n) => n[0])
+               .join("")
+               .toUpperCase();
      };
 
      if (loading) {
@@ -48,169 +62,86 @@ export default function HomePage() {
           return null;
      }
 
-     const getInitials = (name) => {
-          return name
-               .split(" ")
-               .map((n) => n[0])
-               .join("")
-               .toUpperCase();
-     };
-
      return (
-          <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+          <div className="min-h-screen bg-gray-50">
                {/* Header */}
-               <header className="bg-white shadow-sm border-b">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+               <header className="bg-white shadow-sm border-b sticky top-0 z-50">
+                    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
                          <div className="flex justify-between items-center h-16">
                               <div className="flex items-center space-x-3">
                                    <BookOpen className="h-8 w-8 text-blue-600" />
                                    <h1 className="text-xl font-bold text-gray-900">ScholarshipMedia</h1>
                               </div>
+
+                              {/* Search Bar */}
+                              <div className="hidden md:flex flex-1 max-w-md mx-8">
+                                   <div className="relative w-full">
+                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                        <Input
+                                             placeholder="Search scholarships..."
+                                             value={searchQuery}
+                                             onChange={(e) => setSearchQuery(e.target.value)}
+                                             className="pl-10"
+                                        />
+                                   </div>
+                              </div>
+
                               <div className="flex items-center space-x-4">
-                                   <Avatar>
+                                   <Button variant="ghost" size="sm" onClick={() => setShowFilters(!showFilters)} className="hidden md:flex">
+                                        <Filter className="h-4 w-4 mr-2" />
+                                        Filters
+                                   </Button>
+                                   <Button variant="default" size="sm" onClick={() => setShowCreateModal(true)}>
+                                        <Plus className="h-4 w-4 mr-2" />
+                                        Post
+                                   </Button>
+                                   <Avatar className="cursor-pointer">
                                         <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
                                    </Avatar>
-                                   <div className="hidden sm:block">
-                                        <p className="text-sm font-medium text-gray-900">{user.name}</p>
-                                        <p className="text-xs text-gray-500">{user.email}</p>
-                                   </div>
                                    <Button variant="outline" size="sm" onClick={handleLogout}>
-                                        <LogOut className="h-4 w-4 mr-2" />
-                                        Logout
+                                        <LogOut className="h-4 w-4" />
                                    </Button>
+                              </div>
+                         </div>
+
+                         {/* Mobile Search */}
+                         <div className="md:hidden pb-4">
+                              <div className="relative">
+                                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                   <Input
+                                        placeholder="Search scholarships..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="pl-10"
+                                   />
                               </div>
                          </div>
                     </div>
                </header>
 
                {/* Main Content */}
-               <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    {/* Welcome Section */}
-                    <div className="mb-8">
-                         <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome back, {user.name.split(" ")[0]}!</h2>
-                         <p className="text-gray-600">Discover scholarship opportunities and manage your applications</p>
-                    </div>
+               <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                    {/* Filters */}
+                    {showFilters && (
+                         <div className="mb-6">
+                              <SearchFilters onFiltersChange={(filters) => console.log(filters)} />
+                         </div>
+                    )}
 
-                    {/* Stats Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                         <Card>
-                              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                   <CardTitle className="text-sm font-medium">Available Scholarships</CardTitle>
-                                   <Award className="h-4 w-4 text-muted-foreground" />
-                              </CardHeader>
-                              <CardContent>
-                                   <div className="text-2xl font-bold">1,234</div>
-                                   <p className="text-xs text-muted-foreground">+20% from last month</p>
-                              </CardContent>
-                         </Card>
-
-                         <Card>
-                              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                   <CardTitle className="text-sm font-medium">Applications Submitted</CardTitle>
-                                   <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                              </CardHeader>
-                              <CardContent>
-                                   <div className="text-2xl font-bold">12</div>
-                                   <p className="text-xs text-muted-foreground">+3 this week</p>
-                              </CardContent>
-                         </Card>
-
-                         <Card>
-                              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                   <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
-                                   <Award className="h-4 w-4 text-muted-foreground" />
-                              </CardHeader>
-                              <CardContent>
-                                   <div className="text-2xl font-bold">75%</div>
-                                   <p className="text-xs text-muted-foreground">Above average</p>
-                              </CardContent>
-                         </Card>
-
-                         <Card>
-                              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                   <CardTitle className="text-sm font-medium">Total Students</CardTitle>
-                                   <Users className="h-4 w-4 text-muted-foreground" />
-                              </CardHeader>
-                              <CardContent>
-                                   <div className="text-2xl font-bold">45,231</div>
-                                   <p className="text-xs text-muted-foreground">+1,234 new users</p>
-                              </CardContent>
-                         </Card>
-                    </div>
-
-                    {/* User Profile Card */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                         <Card className="lg:col-span-1">
-                              <CardHeader>
-                                   <CardTitle>Profile Information</CardTitle>
-                                   <CardDescription>Your account details</CardDescription>
-                              </CardHeader>
-                              <CardContent className="space-y-4">
-                                   <div className="flex items-center space-x-4">
-                                        <Avatar className="h-16 w-16">
-                                             <AvatarFallback className="text-lg">{getInitials(user.name)}</AvatarFallback>
-                                        </Avatar>
-                                        <div>
-                                             <h3 className="font-semibold text-lg">{user.name}</h3>
-                                             <p className="text-sm text-gray-500">{user.email}</p>
-                                        </div>
-                                   </div>
-                                   <div className="space-y-2">
-                                        <div>
-                                             <label className="text-sm font-medium text-gray-500">Member Since</label>
-                                             <p className="text-sm">{new Date(user.created_at).toLocaleDateString()}</p>
-                                        </div>
-                                        <div>
-                                             <label className="text-sm font-medium text-gray-500">Email Status</label>
-                                             <p className="text-sm">
-                                                  {user.email_verified_at ? (
-                                                       <span className="text-green-600">Verified</span>
-                                                  ) : (
-                                                       <span className="text-orange-600">Unverified</span>
-                                                  )}
-                                             </p>
-                                        </div>
-                                        <div>
-                                             <label className="text-sm font-medium text-gray-500">User ID</label>
-                                             <p className="text-sm">#{user.id}</p>
-                                        </div>
-                                   </div>
-                              </CardContent>
-                         </Card>
-
-                         <Card className="lg:col-span-2">
-                              <CardHeader>
-                                   <CardTitle>Recent Activity</CardTitle>
-                                   <CardDescription>Your latest scholarship activities</CardDescription>
-                              </CardHeader>
-                              <CardContent>
-                                   <div className="space-y-4">
-                                        <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
-                                             <Award className="h-5 w-5 text-blue-600" />
-                                             <div>
-                                                  <p className="text-sm font-medium">Applied to Merit Scholarship</p>
-                                                  <p className="text-xs text-gray-500">2 hours ago</p>
-                                             </div>
-                                        </div>
-                                        <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
-                                             <TrendingUp className="h-5 w-5 text-green-600" />
-                                             <div>
-                                                  <p className="text-sm font-medium">Profile completion increased to 85%</p>
-                                                  <p className="text-xs text-gray-500">1 day ago</p>
-                                             </div>
-                                        </div>
-                                        <div className="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
-                                             <BookOpen className="h-5 w-5 text-purple-600" />
-                                             <div>
-                                                  <p className="text-sm font-medium">New scholarship recommendations available</p>
-                                                  <p className="text-xs text-gray-500">3 days ago</p>
-                                             </div>
-                                        </div>
-                                   </div>
-                              </CardContent>
-                         </Card>
-                    </div>
+                    {/* Scholarship Feed */}
+                    <ScholarshipFeed searchQuery={searchQuery} />
                </main>
+
+               {/* Create Scholarship Modal */}
+               <CreateScholarshipModal
+                    isOpen={showCreateModal}
+                    onClose={() => setShowCreateModal(false)}
+                    onSuccess={() => {
+                         setShowCreateModal(false);
+                         // Refresh feed
+                         window.location.reload();
+                    }}
+               />
           </div>
      );
 }
